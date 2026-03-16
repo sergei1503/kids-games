@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>משחקים לילדים</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0f0f2a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Arial', sans-serif;
+    color: white;
+    direction: rtl;
+  }
+  h1 {
+    font-size: 52px;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+  }
+  .subtitle {
+    font-size: 20px;
+    color: #88aacc;
+    margin-bottom: 50px;
+  }
+  .games {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 900px;
+  }
+  .game-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 35px 40px;
+    width: 360px;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .game-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 12px 40px rgba(255, 215, 0, 0.15);
+  }
+  .game-icon {
+    font-size: 80px;
+    margin-bottom: 15px;
+    display: block;
+  }
+  .game-title {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .game-desc {
+    font-size: 16px;
+    color: #aabbcc;
+    line-height: 1.6;
+  }
+  .game-tag {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+  .tag-2p { background: rgba(255, 107, 74, 0.2); color: #ff9977; border: 1px solid rgba(255, 107, 74, 0.3); }
+  .tag-solo { background: rgba(100, 200, 255, 0.15); color: #88ccff; border: 1px solid rgba(100, 200, 255, 0.2); }
+  .tag-age { background: rgba(180, 255, 150, 0.12); color: #aaddaa; border: 1px solid rgba(180, 255, 150, 0.2); }
+  footer {
+    margin-top: 60px;
+    color: #445;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+  <h1>🎮 משחקים לילדים</h1>
+  <p class="subtitle">בחרו משחק!</p>
+
+  <div class="games">
+    <a class="game-card" href="candy-catch/index.html">
+      <span class="game-icon">🍬</span>
+      <div class="game-title">תפסו ממתקים!</div>
+      <div class="game-desc">
+        ממתקים נופלים מהשמיים - תפסו כמה שיותר!
+        <br>אבל מי שאוכל יותר מדי מתנפח ונופל...
+      </div>
+      <span class="game-tag tag-2p">2 שחקנים</span>
+      <span class="game-tag tag-age">גיל 5+</span>
+    </a>
+
+    <a class="game-card" href="zen-math/index.html">
+      <span class="game-icon">🪨</span>
+      <div class="game-title">גן זן - מתמטיקה</div>
+      <div class="game-desc">
+        גלו מספרים דרך אבנים מרחפות.
+        <br>בלי לחץ, בלי טיימר - סתם לגלות.
+      </div>
+      <span class="game-tag tag-solo">שחקן יחיד</span>
+      <span class="game-tag tag-age">גיל 6+</span>
+    </a>
+  </div>
+
+  <footer>בנקוביץ' גיימז 🕹️</footer>
+</body>
+</html>

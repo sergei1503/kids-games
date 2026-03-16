@@ -1,0 +1,7 @@
+.vercel
+node_modules/
+package-lock.json
+*.png
+*-test.js
+*-test.html
+TEST_RESULTS.md

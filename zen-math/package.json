@@ -1,0 +1,23 @@
+{
+  "name": "zen-math-prototype",
+  "version": "1.0.0",
+  "description": "A contemplative, physics-based math learning application for young children. Built with vanilla JavaScript and HTML5 Canvas.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sergei1503/zen-math-prototype.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sergei1503/zen-math-prototype/issues"
+  },
+  "homepage": "https://github.com/sergei1503/zen-math-prototype#readme",
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  }
+}
