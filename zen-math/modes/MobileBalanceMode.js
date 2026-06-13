@@ -1,3 +1,5 @@
+// Wrapped in IIFE to avoid global const collisions with BalanceScaleMode.js
+(function(){
 // MobileBalanceMode - Recursive hanging mobile for substitution and algebra
 // Visual: Calder-style mobile with organic vines, beams at multiple levels
 // Mechanic: Each beam independently balances, weight propagates bottom-up
@@ -627,3 +629,7 @@ class MobileBalanceMode extends ModeBase {
         this.rootNode = null;
     }
 }
+
+// expose class globally (consumed by app.js ModeManager)
+if (typeof MobileBalanceMode !== "undefined") window.MobileBalanceMode = MobileBalanceMode;
+})();

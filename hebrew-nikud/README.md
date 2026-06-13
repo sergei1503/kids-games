@@ -11,11 +11,14 @@ A tablet-friendly game for a child who knows the Hebrew letters but not the **ni
 
 ## Content
 - 5 core vowels: patach(a), segol(e), chirik(i), holam(o), kubutz(u).
-- Starter letters (single, unambiguous sounds): מ ל נ ר ת ס.
+- Full alef-bet (22 letters). Two-sound letters use the primary sound via dagesh/dot:
+  בּ=b, כּ=k, פּ=p, שׁ=sh; alef/ayin are silent carriers (vowel only).
 - All content lives in `data.js` — add letters/vowels there; no other code changes needed.
 
 ## Audio
-Spoken syllables are static MP3s at `audio/<letter>_<vowel>.mp3` (e.g. `audio/mem_a.mp3`),
+Spoken syllables are static MP3s at `audio/<voice>/<letter>_<vowel>.mp3` (e.g.
+`audio/abba/mem_a.mp3`). Two voices (אבא / אמא) are recorded separately and the game
+plays one at **random** each time, falling back across voices then to browser speech.
 served over HTTPS. This is what makes sound reliable on the tablet (a raw `file://` HTML page
 blocks audio — that was the original problem). A single tap-to-start gate unlocks audio for
 the session. Success/wrong feedback chimes are generated live via Web Audio (no files).

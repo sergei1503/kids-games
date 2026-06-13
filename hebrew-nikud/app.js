@@ -54,20 +54,23 @@
     } catch (e) {}
   }
 
-  // Play a letter+vowel syllable. Returns a promise that resolves when started.
+  // Play a letter+vowel syllable, choosing a random available voice.
+  // Tries voices in random order; falls back to browser speech if none load.
   function playSyllable(letter, vowel) {
-    const path = audioPath(letter, vowel);
-    const a = getAudio(path);
-    a.currentTime = 0;
-    const p = a.play();
-    if (p && p.catch) {
-      p.catch(() => speakFallback(syllableText(letter, vowel)));
-    }
+    const voiceIds = shuffle(VOICES.map(v => v.id));
+    let idx = 0;
+    (function tryNext() {
+      if (idx >= voiceIds.length) { speakFallback(syllableText(letter, vowel)); return; }
+      const a = new Audio(audioPath(letter, vowel, voiceIds[idx++]));
+      let moved = false;
+      const fail = () => { if (moved) return; moved = true; tryNext(); };
+      a.onerror = fail;
+      const p = a.play();
+      if (p && p.catch) p.catch(fail);   // missing file / decode / autoplay -> next voice
+    })();
   }
 
-  function preloadCurrentLetter() {
-    VOWELS.forEach(v => { try { getAudio(audioPath(currentLetter, v)).load(); } catch (e) {} });
-  }
+  function preloadCurrentLetter() { /* no-op: clips are tiny and load on demand */ }
 
   // simple feedback chimes via Web Audio (no files needed)
   function tone(freq, dur, type, vol) {
