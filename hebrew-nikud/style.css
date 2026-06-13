@@ -1,0 +1,118 @@
+/* Hebrew nikud game — kid-friendly, RTL, big touch targets for tablet. */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg: #0f0f2a;
+  --bg2: #16163a;
+  --gold: #ffd54a;
+  --ink: #ffffff;
+  --muted: #8aa0c4;
+  --a: #ff8a5c;  /* warm accent for vowels */
+  --good: #5fd38a;
+  --soft: rgba(255,255,255,0.06);
+  --soft-border: rgba(255,255,255,0.12);
+}
+
+html, body {
+  height: 100%;
+  background: radial-gradient(1200px 700px at 50% -10%, #1c1c4a, var(--bg));
+  color: var(--ink);
+  font-family: 'Heebo', 'Rubik', 'Arial', sans-serif;
+  direction: rtl;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------- start gate (unlocks audio on first tap) ---------- */
+#startGate {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 24px; background: var(--bg); cursor: pointer; text-align: center; padding: 24px;
+}
+#startGate .big { font-size: clamp(80px, 22vw, 180px); animation: bob 2s ease-in-out infinite; }
+#startGate h1 { font-size: clamp(28px, 7vw, 52px); color: var(--gold); }
+#startGate p { font-size: clamp(18px, 4.5vw, 26px); color: var(--muted); }
+@keyframes bob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-16px);} }
+
+/* ---------- app shell ---------- */
+#app { height: 100%; display: none; flex-direction: column; }
+#app.ready { display: flex; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; gap: 12px;
+}
+.home-link {
+  color: var(--muted); text-decoration: none; font-size: 22px;
+  background: var(--soft); border: 1px solid var(--soft-border);
+  border-radius: 14px; padding: 8px 14px;
+}
+.tabs { display: flex; gap: 10px; }
+.tab {
+  font-size: clamp(16px, 3.6vw, 20px); font-weight: 700; color: var(--muted);
+  background: var(--soft); border: 2px solid transparent; border-radius: 18px;
+  padding: 10px 22px; cursor: pointer;
+}
+.tab.active { color: var(--bg); background: var(--gold); }
+.stars { font-size: 22px; min-width: 60px; text-align: left; color: var(--gold); }
+
+main { flex: 1; min-height: 0; padding: 8px 16px 24px; display: flex; flex-direction: column; }
+.screen { flex: 1; min-height: 0; display: none; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ---------- letter picker (shared) ---------- */
+.letter-row {
+  display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; padding: 6px 0 14px;
+}
+.letter-btn {
+  font-size: clamp(30px, 7vw, 48px); font-weight: 700; line-height: 1;
+  width: clamp(58px, 14vw, 84px); height: clamp(58px, 14vw, 84px);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--soft); border: 3px solid var(--soft-border); border-radius: 20px;
+  color: var(--ink); cursor: pointer;
+}
+.letter-btn.active { border-color: var(--gold); background: rgba(255,213,74,0.14); color: var(--gold); }
+
+/* ---------- explore ---------- */
+.vowel-grid {
+  flex: 1; min-height: 0; display: grid; gap: clamp(10px, 2.5vw, 22px);
+  grid-template-columns: repeat(5, 1fr); align-content: center; padding: 8px 0;
+}
+@media (max-width: 720px) { .vowel-grid { grid-template-columns: repeat(3, 1fr); } }
+.syll-card {
+  background: var(--soft); border: 3px solid var(--soft-border); border-radius: 28px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 18px 8px; cursor: pointer; min-height: clamp(140px, 26vh, 230px);
+  transition: transform .12s ease, border-color .12s ease, background .12s ease;
+}
+.syll-card:active { transform: scale(0.94); }
+.syll-card.playing { border-color: var(--a); background: rgba(255,138,92,0.16); transform: scale(1.05); }
+.syll-glyph { font-size: clamp(56px, 13vw, 110px); font-weight: 700; line-height: 1.1; }
+.syll-name { margin-top: 10px; font-size: clamp(13px, 3vw, 18px); color: var(--muted); }
+.syll-card .spk { margin-top: 8px; font-size: clamp(18px, 4vw, 26px); opacity: .7; }
+
+/* ---------- quiz ---------- */
+.quiz-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(16px, 4vh, 36px); }
+.quiz-prompt { font-size: clamp(18px, 4.5vw, 26px); color: var(--muted); text-align: center; }
+.play-big {
+  font-size: clamp(64px, 18vw, 130px); background: var(--soft); border: 4px solid var(--gold);
+  border-radius: 50%; width: clamp(120px, 30vw, 200px); height: clamp(120px, 30vw, 200px);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--gold);
+}
+.play-big:active { transform: scale(0.93); }
+.quiz-options { display: flex; gap: clamp(12px, 3vw, 28px); flex-wrap: wrap; justify-content: center; }
+.opt-card {
+  font-size: clamp(50px, 12vw, 96px); font-weight: 700;
+  width: clamp(96px, 24vw, 150px); height: clamp(96px, 24vw, 150px);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--soft); border: 4px solid var(--soft-border); border-radius: 26px; cursor: pointer;
+}
+.opt-card.correct { border-color: var(--good); background: rgba(95,211,138,0.2); animation: pop .35s ease; }
+.opt-card.wrong { border-color: #ff5d5d; background: rgba(255,93,93,0.15); animation: shake .4s ease; }
+@keyframes pop { 0%{ transform: scale(1);} 50%{ transform: scale(1.18);} 100%{ transform: scale(1);} }
+@keyframes shake { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-9px);} 75%{ transform: translateX(9px);} }
+
+/* celebration star */
+.burst { position: fixed; pointer-events: none; font-size: 40px; z-index: 50; animation: fly .9s ease-out forwards; }
+@keyframes fly { 0%{ transform: translateY(0) scale(.6); opacity: 1;} 100%{ transform: translateY(-160px) scale(1.4); opacity: 0;} }

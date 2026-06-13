@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>אותיות וניקוד</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Tap-to-start gate: a single user gesture unlocks audio playback on tablets -->
+  <div id="startGate">
+    <div class="big">🔤</div>
+    <h1>אותיות וניקוד</h1>
+    <p>געו במסך כדי להתחיל</p>
+  </div>
+
+  <div id="app">
+    <header>
+      <a class="home-link" href="../index.html">🏠</a>
+      <div class="tabs">
+        <button class="tab active" data-screen="explore">לגלות</button>
+        <button class="tab" data-screen="quiz">לשחק</button>
+      </div>
+      <div class="stars" id="stars"></div>
+    </header>
+
+    <main>
+      <!-- EXPLORE -->
+      <section class="screen active" id="explore">
+        <div class="letter-row" id="exploreLetters"></div>
+        <div class="vowel-grid" id="vowelGrid"></div>
+      </section>
+
+      <!-- QUIZ -->
+      <section class="screen" id="quiz">
+        <div class="letter-row" id="quizLetters"></div>
+        <div class="quiz-wrap">
+          <div class="quiz-prompt">איזה ניקוד שמעתם?</div>
+          <button class="play-big" id="quizPlay">🔊</button>
+          <div class="quiz-options" id="quizOptions"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

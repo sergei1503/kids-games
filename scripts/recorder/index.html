@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הקלטת הברות</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { background:#0f0f2a; color:#fff; font-family:'Heebo','Arial',sans-serif; direction:rtl;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+  header { width:100%; max-width:760px; padding:18px 20px; }
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .count { font-size:20px; color:#ffd54a; font-weight:700; direction:ltr; display:inline-block; unicode-bidi:isolate; }
+  .hint-en { color:#8aa0c4; font-size:15px; }
+  .dots { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .dot { width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,.12); cursor:pointer; }
+  .dot.done { background:#5fd38a; }
+  .dot.cur { outline:2px solid #ffd54a; outline-offset:2px; }
+  main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:20px; }
+  .glyph { font-size:clamp(120px,30vw,220px); font-weight:800; line-height:1; }
+  .vname { font-size:24px; color:#8aa0c4; }
+  .sound { font-size:20px; color:#ffd54a; letter-spacing:2px; }
+  .mic { width:140px; height:140px; border-radius:50%; border:5px solid #ffd54a; background:rgba(255,255,255,.06);
+         color:#ffd54a; font-size:60px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .mic.rec { border-color:#ff5d5d; color:#ff5d5d; animation:pulse 1s infinite; }
+  .mic.playing { border-color:#5fd38a; color:#5fd38a; }
+  @keyframes pulse { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
+  .row { display:flex; gap:14px; align-items:center; }
+  button.act { font-size:18px; font-weight:700; padding:12px 22px; border-radius:16px; cursor:pointer;
+               background:rgba(255,255,255,.08); color:#fff; border:2px solid rgba(255,255,255,.15); }
+  button.act.primary { background:#ffd54a; color:#0f0f2a; border-color:#ffd54a; }
+  button.act:disabled { opacity:.35; cursor:default; }
+  .status { min-height:24px; color:#8aa0c4; font-size:15px; }
+  .keys { color:#445; font-size:13px; margin:14px 0 24px; text-align:center; }
+  .auto { color:#8aa0c4; font-size:14px; margin-top:4px; }
+  .auto input { vertical-align:middle; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <span class="count" id="count"></span>
+      <span class="hint-en" id="hintEn"></span>
+    </div>
+    <div class="dots" id="dots"></div>
+  </header>
+
+  <main>
+    <div class="glyph" id="glyph">—</div>
+    <div class="vname" id="vname"></div>
+    <div class="sound" id="sound"></div>
+
+    <button class="mic" id="mic">🎙️</button>
+
+    <div class="row">
+      <button class="act" id="prev">◀ הקודם</button>
+      <button class="act" id="play" disabled>▶ האזנה</button>
+      <button class="act" id="next" disabled>הבא ▶</button>
+    </div>
+    <div class="status" id="status">לחצו על המיקרופון כדי להקליט</div>
+    <label class="auto"><input type="checkbox" id="autoAdv" checked> מעבר אוטומטי להברה הבאה אחרי הקלטה</label>
+  </main>
+
+  <div class="keys">רווח = הקלטה/עצירה &nbsp;·&nbsp; P = האזנה &nbsp;·&nbsp; → / Enter = הבא &nbsp;·&nbsp; ← = הקודם</div>
+
+<script>
+// 30 syllables, row-by-row (must match data.js letter/vowel ids).
+const LETTERS = [
+  {id:'mem',c:'מ',cons:'m'},{id:'lamed',c:'ל',cons:'l'},{id:'nun',c:'נ',cons:'n'},
+  {id:'resh',c:'ר',cons:'r'},{id:'tav',c:'ת',cons:'t'},{id:'samech',c:'ס',cons:'s'},
+];
+const VOWELS = [
+  {id:'a',mark:'ַ',name:'פַּתָּח',v:'a'},
+  {id:'e',mark:'ֶ',name:'סֶגוֹל',v:'e'},
+  {id:'i',mark:'ִ',name:'חִירִיק',v:'i'},
+  {id:'o',mark:'ֹ',name:'חוֹלָם',v:'o'},
+  {id:'u',mark:'ֻ',name:'קֻבּוּץ',v:'u'},
+];
+const ITEMS = [];
+LETTERS.forEach(l => VOWELS.forEach(vw => ITEMS.push({
+  id: l.id + '_' + vw.id,
+  glyph: l.c + vw.mark,
+  vname: vw.name,
+  sound: l.cons + vw.v,
+})));
+
+let i = 0;
+const done = {};            // id -> true once saved
+const blobs = {};           // id -> objectURL for playback
+let mediaRecorder = null, chunks = [], stream = null, recExt = 'webm';
+let advanceToken = 0;       // bumped on any manual nav / new recording to cancel a pending auto-advance
+
+const $ = s => document.querySelector(s);
+const micBtn = $('#mic'), playBtn = $('#play'), nextBtn = $('#next'), prevBtn = $('#prev'), autoAdv = $('#autoAdv');
+
+function pickMime() {
+  const cands = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'];
+  for (const c of cands) if (window.MediaRecorder && MediaRecorder.isTypeSupported(c)) {
+    recExt = c.includes('mp4') ? 'm4a' : (c.includes('ogg') ? 'ogg' : 'webm');
+    return c;
+  }
+  return '';
+}
+
+async function ensureStream() {
+  if (stream) return stream;
+  stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation:true, noiseSuppression:true } });
+  return stream;
+}
+
+function render() {
+  const it = ITEMS[i];
+  const allDone = Object.keys(done).length === ITEMS.length;
+  $('#count').textContent = (i+1) + ' / ' + ITEMS.length + (allDone ? '  ✓' : '');
+  $('#hintEn').textContent = 'אמרו: "' + it.sound + '"';
+  $('#glyph').textContent = it.glyph;
+  $('#vname').textContent = it.vname;
+  $('#sound').textContent = it.sound;
+  playBtn.disabled = !blobs[it.id];
+  nextBtn.disabled = i >= ITEMS.length - 1;
+  prevBtn.disabled = i === 0;
+  const dots = $('#dots'); dots.innerHTML = '';
+  ITEMS.forEach((it2, idx) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (done[it2.id] ? ' done' : '') + (idx===i ? ' cur' : '');
+    d.title = it2.id;
+    d.onclick = () => gotoIndex(idx);
+    dots.appendChild(d);
+  });
+  $('#status').textContent = done[it.id]
+    ? 'הוקלט ✓ — אפשר להאזין, להקליט מחדש, או להמשיך'
+    : 'לחצו על המיקרופון כדי להקליט';
+}
+
+// ---- navigation (all manual nav cancels a pending auto-advance) ----
+function gotoIndex(idx) { advanceToken++; if (idx >= 0 && idx < ITEMS.length) { i = idx; render(); } }
+function gotoNext() { gotoIndex(i + 1); }
+function gotoPrev() { gotoIndex(i - 1); }
+
+// ---- recording ----
+async function startRec() {
+  advanceToken++;                 // cancel any pending auto-advance from a previous clip
+  await ensureStream();
+  chunks = [];
+  const mime = pickMime();
+  mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+  mediaRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  mediaRecorder.onstop = onStop;
+  mediaRecorder.start();
+  micBtn.classList.add('rec'); micBtn.classList.remove('playing'); micBtn.textContent = '⏹';
+  $('#status').textContent = 'מקליט… לחצו לעצירה (או רווח)';
+}
+
+function stopRec() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  micBtn.classList.remove('rec'); micBtn.textContent = '🎙️';
+}
+
+async function onStop() {
+  const it = ITEMS[i];
+  const recordedIndex = i;
+  const blob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' });
+  if (blobs[it.id]) URL.revokeObjectURL(blobs[it.id]);
+  blobs[it.id] = URL.createObjectURL(blob);
+  try {
+    await fetch('/save?name=' + encodeURIComponent(it.id) + '&ext=' + recExt, { method:'POST', body: blob });
+    done[it.id] = true;
+    $('#status').textContent = 'נשמר ✓ — מתנגן לאימות…';
+  } catch (e) {
+    $('#status').textContent = 'נשמר מקומית (השרת לא הגיב — בדקו ש-serve.py רץ)';
+  }
+  render();
+  // play the clip back to verify, then (optionally) auto-advance to the next syllable
+  const myToken = ++advanceToken;
+  playClip(it.id, () => {
+    if (myToken !== advanceToken) return;        // user navigated / re-recorded meanwhile
+    if (autoAdv.checked && recordedIndex < ITEMS.length - 1) {
+      i = recordedIndex + 1; render();
+    } else if (recordedIndex >= ITEMS.length - 1) {
+      $('#status').textContent = 'סיימתם! כל ' + ITEMS.length + ' ההברות הוקלטו ✓ — הריצו convert.sh';
+    }
+  });
+}
+
+// ---- playback ----
+function playClip(id, onEnded) {
+  if (!blobs[id]) { if (onEnded) onEnded(); return; }
+  const a = new Audio(blobs[id]);
+  micBtn.classList.add('playing');
+  let fired = false;
+  const fin = () => { if (fired) return; fired = true; micBtn.classList.remove('playing'); if (onEnded) onEnded(); };
+  a.onended = fin;
+  a.play().then(() => { setTimeout(fin, 5000); }).catch(() => setTimeout(fin, 400));
+}
+function playCurrent() { playClip(ITEMS[i].id); }   // האזנה button — listen only, never advances
+
+// ---- controls ----
+function toggleRec() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') stopRec(); else startRec();
+}
+micBtn.onclick = toggleRec;
+playBtn.onclick = playCurrent;
+nextBtn.onclick = gotoNext;
+prevBtn.onclick = gotoPrev;
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); toggleRec(); }
+  else if (e.key === 'p' || e.key === 'P') playCurrent();
+  else if (e.key === 'ArrowRight' || e.key === 'Enter') gotoNext();
+  else if (e.key === 'ArrowLeft') gotoPrev();
+});
+
+render();
+</script>
+</body>
+</html>
