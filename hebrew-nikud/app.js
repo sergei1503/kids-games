@@ -141,31 +141,85 @@
   }
 
   // ---------- quiz ----------
-  let quizAnswer = null;
+  // Letter source: 'random' | 'choose' | 'smart'.  Answer style: 'same' | 'mixed'.
+  let quizSrc = 'random';
+  let quizAns = 'same';
+  let quizTarget = null;            // { letter, vowel }
+  const OPTION_COUNT = 4;           // answer + distractors (layout supports up to 5)
 
-  function newQuizRound() {
-    quizAnswer = VOWELS[Math.floor(rnd() * VOWELS.length)];
-    // 3 options: the answer + 2 distractors
-    const others = VOWELS.filter(v => v.id !== quizAnswer.id);
-    shuffle(others);
-    const opts = shuffle([quizAnswer, others[0], others[1]]);
-
-    const box = document.getElementById('quizOptions');
-    box.innerHTML = '';
-    opts.forEach(vowel => {
-      const c = document.createElement('button');
-      c.className = 'opt-card v-' + vowel.id;
-      c.textContent = syllableText(currentLetter, vowel);
-      c.addEventListener('click', () => onQuizPick(vowel, c));
-      box.appendChild(c);
-    });
-    preloadCurrentLetter();
-    setTimeout(() => playSyllable(currentLetter, quizAnswer), 250);
+  // --- adaptive stats, persisted across sessions ---
+  const STATS_KEY = 'nikud_stats_v1';
+  let stats = loadStats();
+  function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch (e) { return {}; } }
+  function saveStats() { try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)); } catch (e) {} }
+  function bumpStat(id, wrong) {
+    const st = stats[id] || (stats[id] = { seen: 0, wrong: 0 });
+    st.seen++; if (wrong) st.wrong++;
+    saveStats();
   }
 
-  function onQuizPick(vowel, card) {
+  function allCombos() {
+    const out = [];
+    LETTERS.forEach(l => VOWELS.forEach(v => out.push({ letter: l, vowel: v })));
+    return out;
+  }
+  function comboId(c) { return c.letter.id + '_' + c.vowel.id; }
+  function comboGlyph(c) { return c.letter.char + (c.letter.mod || '') + c.vowel.mark; }
+
+  // weighted pick favouring struggled syllables (more wrongs -> more likely)
+  function pickStruggleCombo() {
+    const combos = allCombos();
+    const weights = combos.map(c => { const st = stats[comboId(c)]; return 1 + (st ? st.wrong * 3 : 0); });
+    let r = rnd() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < combos.length; i++) { r -= weights[i]; if (r <= 0) return combos[i]; }
+    return combos[combos.length - 1];
+  }
+
+  function chooseTarget() {
+    if (quizSrc === 'choose') return { letter: currentLetter, vowel: VOWELS[Math.floor(rnd() * VOWELS.length)] };
+    if (quizSrc === 'smart')  return pickStruggleCombo();
+    return { letter: LETTERS[Math.floor(rnd() * LETTERS.length)], vowel: VOWELS[Math.floor(rnd() * VOWELS.length)] };
+  }
+
+  function buildOptions(target) {
+    const opts = [target];
+    if (quizAns === 'same') {
+      const others = shuffle(VOWELS.filter(v => v.id !== target.vowel.id));
+      for (let i = 0; i < OPTION_COUNT - 1 && i < others.length; i++) opts.push({ letter: target.letter, vowel: others[i] });
+    } else {
+      const seen = new Set([comboGlyph(target)]);
+      for (const c of shuffle(allCombos())) {
+        if (opts.length >= OPTION_COUNT) break;
+        const g = comboGlyph(c);
+        if (seen.has(g)) continue;       // distinct glyphs only
+        seen.add(g); opts.push(c);
+      }
+    }
+    return shuffle(opts);
+  }
+
+  function newQuizRound() {
+    quizTarget = chooseTarget();
+    currentLetter = quizTarget.letter;
+    document.getElementById('quizPrompt').textContent =
+      (quizAns === 'same') ? 'איזה ניקוד שמעתם?' : 'איזו הברה שמעתם?';
+    const box = document.getElementById('quizOptions');
+    box.innerHTML = '';
+    buildOptions(quizTarget).forEach(opt => {
+      const c = document.createElement('button');
+      c.className = 'opt-card';
+      c.textContent = syllableText(opt.letter, opt.vowel);
+      c.addEventListener('click', () => onQuizPick(opt, c));
+      box.appendChild(c);
+    });
+    setTimeout(() => playSyllable(quizTarget.letter, quizTarget.vowel), 250);
+  }
+
+  function onQuizPick(opt, card) {
     if (card.classList.contains('correct') || card.classList.contains('wrong')) return;
-    if (vowel.id === quizAnswer.id) {
+    const correct = opt.letter.id === quizTarget.letter.id && opt.vowel.id === quizTarget.vowel.id;
+    bumpStat(comboId(quizTarget), !correct);
+    if (correct) {
       card.classList.add('correct');
       stars++; renderStars(); chimeGood(); burst(card);
       setTimeout(newQuizRound, 950);
@@ -173,14 +227,36 @@
       card.classList.add('wrong');
       chimeMeh();
       setTimeout(() => card.classList.remove('wrong'), 450);
-      setTimeout(() => playSyllable(currentLetter, quizAnswer), 200);
+      setTimeout(() => playSyllable(quizTarget.letter, quizTarget.vowel), 200);
     }
   }
 
+  function onQuizLetterPick() { newQuizRound(); }
+
   function setupQuiz() {
-    buildLetterRow('quizLetters', () => newQuizRound());
+    buildLetterRow('quizLetters', onQuizLetterPick);
+    document.getElementById('quizLetters').style.display = 'none';
+    document.querySelectorAll('#srcGroup .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#srcGroup .chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        quizSrc = chip.dataset.src;
+        const strip = document.getElementById('quizLetters');
+        if (quizSrc === 'choose') { buildLetterRow('quizLetters', onQuizLetterPick); strip.style.display = ''; }
+        else strip.style.display = 'none';
+        newQuizRound();
+      });
+    });
+    document.querySelectorAll('#ansGroup .chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#ansGroup .chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        quizAns = chip.dataset.ans;
+        newQuizRound();
+      });
+    });
     document.getElementById('quizPlay').addEventListener('click', () => {
-      if (quizAnswer) playSyllable(currentLetter, quizAnswer);
+      if (quizTarget) playSyllable(quizTarget.letter, quizTarget.vowel);
     });
   }
 
@@ -209,7 +285,7 @@
         screen.classList.add('active');
         // refresh letter pickers to reflect the shared currentLetter
         if (tab.dataset.screen === 'explore') { buildLetterRow('exploreLetters', () => { preloadCurrentLetter(); renderExplore(); }); renderExplore(); }
-        if (tab.dataset.screen === 'quiz') { buildLetterRow('quizLetters', () => newQuizRound()); newQuizRound(); }
+        if (tab.dataset.screen === 'quiz') { newQuizRound(); }
       });
     });
   }

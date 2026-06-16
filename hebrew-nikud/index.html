@@ -36,9 +36,20 @@
 
       <!-- QUIZ -->
       <section class="screen" id="quiz">
+        <div class="quiz-controls">
+          <div class="chip-group" id="srcGroup">
+            <button class="chip active" data-src="random">🎲 אקראי</button>
+            <button class="chip" data-src="choose">✋ בחירת אות</button>
+            <button class="chip" data-src="smart">🎯 חכם</button>
+          </div>
+          <div class="chip-group" id="ansGroup">
+            <button class="chip active" data-ans="same">אותו אות</button>
+            <button class="chip" data-ans="mixed">אותיות שונות</button>
+          </div>
+        </div>
         <div class="letter-row" id="quizLetters"></div>
         <div class="quiz-wrap">
-          <div class="quiz-prompt">איזה ניקוד שמעתם?</div>
+          <div class="quiz-prompt" id="quizPrompt">איזה ניקוד שמעתם?</div>
           <button class="play-big" id="quizPlay">🔊</button>
           <div class="quiz-options" id="quizOptions"></div>
         </div>
