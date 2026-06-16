@@ -104,8 +104,12 @@
         document.querySelectorAll('#' + containerId + ' .letter-btn')
           .forEach(x => x.classList.remove('active'));
         b.classList.add('active');
+        b.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         onPick(letter);
       });
+      if (letter.id === currentLetter.id) {
+        requestAnimationFrame(() => b.scrollIntoView({ inline: 'center', block: 'nearest' }));
+      }
       row.appendChild(b);
     });
   }
@@ -116,7 +120,7 @@
     grid.innerHTML = '';
     VOWELS.forEach(vowel => {
       const card = document.createElement('div');
-      card.className = 'syll-card';
+      card.className = 'syll-card v-' + vowel.id;
       card.innerHTML =
         '<div class="syll-glyph">' + syllableText(currentLetter, vowel) + '</div>' +
         '<div class="syll-name">' + vowel.name + '</div>' +
@@ -150,7 +154,7 @@
     box.innerHTML = '';
     opts.forEach(vowel => {
       const c = document.createElement('button');
-      c.className = 'opt-card';
+      c.className = 'opt-card v-' + vowel.id;
       c.textContent = syllableText(currentLetter, vowel);
       c.addEventListener('click', () => onQuizPick(vowel, c));
       box.appendChild(c);
